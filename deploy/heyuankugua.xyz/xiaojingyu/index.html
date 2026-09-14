@@ -18,6 +18,8 @@
     user-select: none;
   }
   #cv{
+    position: fixed;                 /* 钉在视口上：地址栏收放、页面滚动都不会让它错位 */
+    left: 0; top: 0;
     display: block;
     width: 100%;
     height: 100%;
@@ -78,11 +80,17 @@ function refit() {
   }
 }
 function refitInner() {
-  const dpr = Math.min(window.devicePixelRatio || 1, 3);
+  // DPR 上限取 2：3x 屏上缓冲会大到 1200×2600，既费电又逼近部分浏览器的画布合成上限
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
   const de = document.documentElement;
-  // 视口尺寸只看文档元素，避免"画布尺寸 → 布局 → 画布尺寸"的反馈环
-  const cw = Math.max(1, de.clientWidth || window.innerWidth);
-  const ch = Math.max(1, de.clientHeight || window.innerHeight);
+  // 视口尺寸的测量优先级：视觉视口 > 窗口 > 文档元素
+  //  移动端在地址栏收放 / 双指缩放时，布局视口(de.clientWidth)可能比真正可见的区域大，
+  //  用错就会出现"画布比可视区域窄一条"，右侧或底部露出底色。这里取用户真正看得见的那个。
+  const vvp = window.visualViewport;
+  const widths = [vvp ? vvp.width : 0, window.innerWidth || 0, de.clientWidth || 0].filter(v => v > 0);
+  const heights = [vvp ? vvp.height : 0, window.innerHeight || 0, de.clientHeight || 0].filter(v => v > 0);
+  const cw = Math.max(1, Math.round(Math.min.apply(null, widths)));
+  const ch = Math.max(1, Math.round(Math.min.apply(null, heights)));
   const bw = Math.round(cw * dpr), bh = Math.round(ch * dpr);
   // 后备存储跟随视口
   if (bw !== bufW || bh !== bufH) { cv.width = bw; cv.height = bh; bufW = bw; bufH = bh; }
@@ -92,7 +100,13 @@ function refitInner() {
     cv.style.height = ch + "px";
   }
   vw = cw; vh = ch;
-  lastFit = { cw, ch, innerW: window.innerWidth, innerH: window.innerHeight, dpr: +dpr.toFixed(3), buf: [bufW, bufH] };
+  lastFit = {
+    cw, ch, innerW: window.innerWidth, innerH: window.innerHeight,
+    docW: de.clientWidth, docH: de.clientHeight,
+    vvW: vvp ? Math.round(vvp.width) : null, vvH: vvp ? Math.round(vvp.height) : null,
+    vvScale: vvp ? +vvp.scale.toFixed(3) : null,
+    dpr: +dpr.toFixed(3), buf: [bufW, bufH],
+  };
   // 缩放策略（关键是让"可见的逻辑范围 ≥ 420×720"，玩法区才不会被裁掉）：
   //  - 竖屏/手机：以宽度为准 → 420 宽全见，多出来的高低由天空/地面延伸填满
   //  - 横屏/桌面：以高度为准 → 720 高全见，多出来的左右延伸；若因此两侧留白过宽，
@@ -112,7 +126,16 @@ let fitTimer = 0;
 function fit() { refit(); clearTimeout(fitTimer); fitTimer = setTimeout(refit, 250); }
 window.addEventListener("resize", fit);
 window.addEventListener("orientationchange", fit);
+window.addEventListener("load", fit);
+window.addEventListener("pageshow", fit);          // 从后退缓存恢复时尺寸也会变
 document.addEventListener("visibilitychange", () => { if (!document.hidden) refit(); });
+if (window.visualViewport) {                       // 地址栏收放 / 双指缩放
+  window.visualViewport.addEventListener("resize", fit);
+  window.visualViewport.addEventListener("scroll", refit);
+}
+if (window.ResizeObserver) {                       // 画布盒子真的变了就立刻重算
+  new ResizeObserver(() => refit()).observe(cv);
+}
 
 // ---------- 常量 ----------
 const GROUND_H   = 96;
@@ -746,6 +769,7 @@ function loop(now) {
   if (autopilot && state === "play") autopilotSteer();
   if (!paused) update(dt);
   draw(now / 1000);
+  if ((telemetry.frames & 15) === 0) updateDebug();
   requestAnimationFrame(loop);
 }
 
@@ -769,6 +793,9 @@ function autopilotSteer() {
 // ---------- 启动 ----------
 refit();
 reset();
+// 启动后再补两次校准：移动端首屏地址栏收放、字体/布局稳定都会改变可视高度
+setTimeout(refit, 60);
+setTimeout(refit, 400);
 
 // 自检：确认 420×720 玩法区完整可见，且画面延伸铺满整块画布（无空白边）
 function selfTest() {
@@ -794,6 +821,29 @@ function selfTest() {
 }
 requestAnimationFrame(loop);
 
+// ---------- 可选调试层：地址后加 ?debug=1 打开 ----------
+// 手机上用它一眼看出"画布尺寸 / 可视区域 / DPR"是否对得上
+let dbgEl = null;
+function updateDebug() {
+  if (!/[?&]debug=1/.test(location.search)) return;
+  if (!dbgEl) {
+    dbgEl = document.createElement("pre");
+    dbgEl.style.cssText = "position:fixed;left:0;right:0;bottom:0;z-index:99;margin:0;padding:8px 10px;" +
+      "font:12px/1.45 ui-monospace,Consolas,monospace;color:#fff;background:rgba(0,0,0,.62);white-space:pre-wrap";
+    document.body.appendChild(dbgEl);
+  }
+  const f = lastFit || {};
+  const r = cv.getBoundingClientRect();
+  const kx = cv.width / VW;
+  dbgEl.textContent =
+    `视口 innerW/H ${f.innerW}x${f.innerH}   文档 ${f.docW}x${f.docH}\n` +
+    `可视 visualViewport ${f.vvW}x${f.vvH} scale=${f.vvScale}\n` +
+    `采用(三者取最小) ${f.cw}x${f.ch}   DPR ${f.dpr}\n` +
+    `画布盒子 ${Math.round(r.width)}x${Math.round(r.height)}  缓冲 ${f.buf ? f.buf.join("x") : "?"}\n` +
+    `scale ${sc.toFixed(4)}  offX ${offX.toFixed(1)}  offY ${offY.toFixed(1)}  可见逻辑 ${(cv.width / kx).toFixed(0)}x${(cv.height / kx).toFixed(0)}` +
+    (lastFitError ? `\n⚠ ${lastFitError}` : "");
+}
+
 // 供调试/自动化检查使用
 window.__xiaojingyu = {
   get state() { return state; },
@@ -806,7 +856,6 @@ window.__xiaojingyu = {
   spriteURI: SPRITE_URI,
   selfTest,
   lastFit: () => ({ ...(lastFit || {}), error: lastFitError, sc: +sc.toFixed(4), offX: +offX.toFixed(2), offY: +offY.toFixed(2), vw, vh }),
-  lastFit: () => lastFit,
   telemetry: () => telemetry,
   flightLog,
   layout: () => ({ sc, offX, offY, kx: cv.width / VW, ky: cv.height / VH, cw: cv.width, ch: cv.height, ox: offX / sc, oy: offY / sc }),
