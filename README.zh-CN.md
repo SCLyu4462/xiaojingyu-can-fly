@@ -2,6 +2,12 @@
 
 一个用原图小鲸鱼当主角的「笨鸟先飞」小游戏。**单文件、零依赖、双击即玩。**
 
+> 在线试玩：**https://sclyu4462.github.io/clumsy-bird-flies-first/**
+> 仓库地址：**https://github.com/SCLyu4462/clumsy-bird-flies-first**
+>
+> 提示：本仓库的 git 全局代理指向 `127.0.0.1:7890`，若该端口没开，推送会失败。
+> 可临时绕过：`git -c http.proxy= -c https.proxy= push`
+
 ```
 笨鸟先飞/
 ├── index.html            ← 游戏本体（贴图已内嵌，双击就能玩）

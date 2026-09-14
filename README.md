@@ -4,6 +4,8 @@ A tiny one-file Flappy-style browser game where the bird is a **black whale** ta
 hand-drawn illustration. Tap / click / press Space to flap, slip through the bamboo gaps,
 and see how far a clumsy bird can get before it falls.
 
+### ▶ [**Play it in your browser**](https://sclyu4462.github.io/clumsy-bird-flies-first/)
+
 ![ready screen](docs/screenshot-ready.png)
 
 * **Single file, zero dependencies** — open `index.html` in a browser and play, offline-friendly
