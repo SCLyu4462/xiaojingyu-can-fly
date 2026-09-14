@@ -1,10 +1,10 @@
-# 笨鸟先飞 · The Clumsy Bird Flies First
+# 小鲸鱼能飞 · The Little Whale Who Could Fly
 
 A tiny one-file Flappy-style browser game where the bird is a **black whale** taken from a
 hand-drawn illustration. Tap / click / press Space to flap, slip through the bamboo gaps,
-and see how far a clumsy bird can get before it falls.
+and see how far a little whale can get before it falls.
 
-### ▶ [**Play it in your browser**](https://sclyu4462.github.io/clumsy-bird-flies-first/)
+### ▶ [**Play it in your browser**](https://sclyu4462.github.io/xiaojingyu-can-fly/)
 
 ![ready screen](docs/screenshot-ready.png)
 
@@ -16,8 +16,8 @@ and see how far a clumsy bird can get before it falls.
 ## Quick start
 
 ```bash
-git clone https://github.com/SCLyu4462/clumsy-bird-flies-first.git
-cd clumsy-bird-flies-first
+git clone https://github.com/SCLyu4462/xiaojingyu-can-fly.git
+cd xiaojingyu-can-fly
 # just open index.html — that's it
 ```
 
@@ -99,13 +99,14 @@ tools/make_bird_sprite.py   source art -> game sprite
 tools/repack_sprite.py      re-embed the sprite into index.html
 tests/drive.js              automated regression suite (18 assertions)
 tests/serve.js              tiny static server for the tests
-deploy/heyuankugua.xyz/     site-specific files for heyuankugua.xyz/benniao/
+deploy/heyuankugua.xyz/     site-specific files for heyuankugua.xyz/xiaojingyu/
 README.zh-CN.md             Chinese write-up: mechanics, bug log, limitations
 ```
 
 ### Site deployment (`deploy/heyuankugua.xyz/`)
 
-Self-hosting on the author's blog needs two extra bits on top of `index.html`:
+Self-hosting on the author's blog (<https://heyuankugua.xyz/xiaojingyu/>) needs two extra
+bits on top of the root `index.html`:
 
 * a `#home` pill in the top-left corner linking back to the blog
 * a third `.project-card` block on the blog landing page

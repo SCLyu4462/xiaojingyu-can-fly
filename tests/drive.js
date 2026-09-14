@@ -151,7 +151,7 @@ function check(name, ok, detail) {
       if (!c) return null;
       const dpr = window.devicePixelRatio || 1;
       return { buf: [c.width, c.height], want: [Math.round(c.clientWidth * dpr), Math.round(c.clientHeight * dpr)],
-               dpr, frames: window.__benniao ? window.__benniao.telemetry().frames : -1 };
+               dpr, frames: window.__xiaojingyu ? window.__xiaojingyu.telemetry().frames : -1 };
     `);
     if (t && t.buf[0] === t.want[0] && t.frames > 2) break;
     await sleep(200);
@@ -163,44 +163,44 @@ function check(name, ok, detail) {
     const dpr = window.devicePixelRatio || 1;
     return { buf: [c.width, c.height], want: [Math.round(c.clientWidth * dpr), Math.round(c.clientHeight * dpr)],
              view: [window.innerWidth, window.innerHeight], dpr,
-             frames: window.__benniao ? window.__benniao.telemetry().frames : -1,
-             fit: window.__benniao ? window.__benniao.lastFit() : null };
+             frames: window.__xiaojingyu ? window.__xiaojingyu.telemetry().frames : -1,
+             fit: window.__xiaojingyu ? window.__xiaojingyu.lastFit() : null };
   `);
   check("canvas backing store matches its box × DPR",
     boot.buf[0] === boot.want[0] && boot.buf[1] === boot.want[1], boot);
 
   // 1. 精灵图是否解码成功
   const sprite = await cdp.eval(`
-    const b = new Promise(r => { const i = new Image(); i.onload = () => r([i.naturalWidth, i.naturalHeight]); i.onerror = () => r(null); i.src = window.__benniao ? document.querySelector('canvas') && '' : ''; });
-    return { ready: window.__benniao.spriteReady() };
+    const b = new Promise(r => { const i = new Image(); i.onload = () => r([i.naturalWidth, i.naturalHeight]); i.onerror = () => r(null); i.src = window.__xiaojingyu ? document.querySelector('canvas') && '' : ''; });
+    return { ready: window.__xiaojingyu.spriteReady() };
   `);
   check("sprite decoded from data URI", sprite.ready === true, sprite);
 
   // 2. 初始状态
-  const ready = await cdp.eval(`return { state: window.__benniao.state, cls: window.__benniao.debug() };`);
+  const ready = await cdp.eval(`return { state: window.__xiaojingyu.state, cls: window.__xiaojingyu.debug() };`);
   check("initial state is ready", ready.state === "ready", ready.cls);
   await cdp.shot(TAG + "-01-ready");
 
   // 3. 键盘空格起飞（直接派发事件，避免 headless 时间膨胀影响判定）
   const afterKey = await cdp.eval(`
-    window.__benniao.reset();
+    window.__xiaojingyu.reset();
     window.dispatchEvent(new KeyboardEvent('keydown', { code: 'Space', key: ' ', bubbles: true }));
-    return { state: window.__benniao.state, vy: Math.round(window.__benniao.debug().vy) };
+    return { state: window.__xiaojingyu.state, vy: Math.round(window.__xiaojingyu.debug().vy) };
   `);
   check("space key starts flight (vy < 0)", afterKey.state === "play" && afterKey.vy < 0, afterKey);
 
   // 4. 指针点击也能起飞
   const clickPt = await cdp.eval(`const r = document.querySelector('canvas').getBoundingClientRect(); return { x: Math.round(r.left + r.width / 2), y: Math.round(r.top + r.height * 0.8) };`);
   const afterClick = await cdp.eval(`
-    window.__benniao.reset();
+    window.__xiaojingyu.reset();
     document.querySelector('canvas').dispatchEvent(new PointerEvent('pointerdown', { pointerType: 'touch', clientX: ${clickPt.x}, clientY: ${clickPt.y}, bubbles: true }));
-    return { state: window.__benniao.state, vy: Math.round(window.__benniao.debug().vy) };
+    return { state: window.__xiaojingyu.state, vy: Math.round(window.__xiaojingyu.debug().vy) };
   `);
   check("pointer click starts flight", afterClick.state === "play" && afterClick.vy < 0, { ...afterClick, clickPt });
 
   // 5. 不操作 -> 掉到地上 -> game over（用状态回放，避免 headless 帧率抖动造成漏采）
   const idleRun = await cdp.eval(`
-    const B = window.__benniao;
+    const B = window.__xiaojingyu;
     B.autopilot(false);
     B.pause(true);
     B.reset();
@@ -218,7 +218,7 @@ function check(name, ok, detail) {
   // 6. 确定性模拟：暂停 rAF，用固定步长驱动真实的 update()，检验竹竿可以通过
   //    （headless 下帧率不稳定，所以用固定步长回放，结论与真实浏览器一致）
   const sim = await cdp.eval(`
-    const B = window.__benniao;
+    const B = window.__xiaojingyu;
     const dt = 1 / 60;
     B.pause(true);                                     // 先冻结 rAF，保证完全可控
     B.autopilot(true);                                 // 让"陪练"接管扇翅膀
@@ -247,7 +247,7 @@ function check(name, ok, detail) {
   check("clearance stayed sane while cruising", sim.minClear > 8, { minClear: sim.minClear });
   // 6b. 同样的确定性步进，但完全不扇翅膀 -> 必定落地结束
   const simIdle = await cdp.eval(`
-    const B = window.__benniao;
+    const B = window.__xiaojingyu;
     B.pause(true);
     B.reset();
     B.flap();
@@ -263,7 +263,7 @@ function check(name, ok, detail) {
 
   // 6c. 天花板：撞到上限后必须落下来（防"粘在天花板上"回归）
   const ceiling = await cdp.eval(`
-    const B = window.__benniao;
+    const B = window.__xiaojingyu;
     B.autopilot(false);
     B.pause(true);
     B.reset();
@@ -291,7 +291,7 @@ function check(name, ok, detail) {
 
   // 7. 撞竹竿必然进入 dying -> over（同样用确定性步进）
   const crash = await cdp.eval(`
-    const B = window.__benniao;
+    const B = window.__xiaojingyu;
     B.autopilot(false);
     B.pause(true);
     B.reset();
@@ -317,10 +317,10 @@ function check(name, ok, detail) {
 
   // 8. 结束后再来一次（同样直接派发事件）
   const restart = await cdp.eval(`
-    window.__benniao.reset();
-    const afterReset = window.__benniao.state;
+    window.__xiaojingyu.reset();
+    const afterReset = window.__xiaojingyu.state;
     document.querySelector('canvas').dispatchEvent(new PointerEvent('pointerdown', { pointerType: 'touch', clientX: ${clickPt.x}, clientY: ${clickPt.y}, bubbles: true }));
-    return { state: window.__benniao.state, score: window.__benniao.debug().score, afterReset };
+    return { state: window.__xiaojingyu.state, score: window.__xiaojingyu.debug().score, afterReset };
   `);
   check("restart after game over works", restart.state === "play" && restart.score === 0, { ...restart, clickPt });
 
@@ -345,7 +345,7 @@ function check(name, ok, detail) {
         res({ drawn: true, darkPct: +(100 * dark / tot).toFixed(1), natural: [img.naturalWidth, img.naturalHeight] });
       };
       img.onerror = e => res({ drawn: false, error: String(e && e.type) });
-      img.src = window.__benniao.spriteURI || '';
+      img.src = window.__xiaojingyu.spriteURI || '';
     });
     return src;
   `);
@@ -358,18 +358,18 @@ function check(name, ok, detail) {
   // 10b. 让 draw() 真跑一帧：确认渲染不抛异常、且玩法区域完整落在视口内
   const drawErr = await cdp.eval(`
     const c = document.querySelector('canvas');
-    const lay = window.__benniao.layout();
-    window.__benniao.reset();
-    window.__benniao.pause(true);
-    const gs = window.__benniao.gamestate();
+    const lay = window.__xiaojingyu.layout();
+    window.__xiaojingyu.reset();
+    window.__xiaojingyu.pause(true);
+    const gs = window.__xiaojingyu.gamestate();
     gs.bird.y = 300; gs.bird.vy = 0; gs.bird.rot = 0;
     let err = "ok";
-    try { window.__benniao.draw(1.0); } catch (e) { err = "THREW: " + e.message; }
-    window.__benniao.pause(false);
+    try { window.__xiaojingyu.draw(1.0); } catch (e) { err = "THREW: " + e.message; }
+    window.__xiaojingyu.pause(false);
     const want = { x: lay.kx * 132 + lay.ox, y: lay.ky * 300 + lay.oy, size: lay.ky * 70 };
     const inBounds = want.x - want.size / 2 >= 0 && want.y - want.size / 2 >= 0 &&
                      want.x + want.size / 2 <= c.width && want.y + want.size / 2 <= c.height;
-    return { err, want, inBounds, canvas: [c.width, c.height], spriteReady: window.__benniao.spriteReady() };
+    return { err, want, inBounds, canvas: [c.width, c.height], spriteReady: window.__xiaojingyu.spriteReady() };
   `);
   check("draw() runs without throwing", drawErr.err === "ok", drawErr.err);
   check("play field fits the viewport (bird inside canvas)", drawErr.inBounds, drawErr.want);
@@ -377,13 +377,13 @@ function check(name, ok, detail) {
   // 10c. 变换自检：玩法区必须可见、画面必须铺满画布、鲸鱼必须在画布内
   const cover = await cdp.eval(`
     const c = document.querySelector('canvas');
-    const s = window.__benniao.selfTest();
+    const s = window.__xiaojingyu.selfTest();
     // 画布后备存储应等于 CSS 尺寸 × DPR（允许 1px 取整误差）
     const dpr = window.devicePixelRatio || 1;
     const sizeOk = Math.abs(c.width - Math.round(c.clientWidth * dpr)) <= 1 &&
                    Math.abs(c.height - Math.round(c.clientHeight * dpr)) <= 1;
     return { sizeOk, css: [c.clientWidth, c.clientHeight], buf: [c.width, c.height], dpr, self: s,
-             lastFit: window.__benniao.lastFit(), win: [window.innerWidth, window.innerHeight] };
+             lastFit: window.__xiaojingyu.lastFit(), win: [window.innerWidth, window.innerHeight] };
   `);
   check("canvas backing store matches viewport × DPR", cover.sizeOk, cover);
   check("self-test: view transform consistent",

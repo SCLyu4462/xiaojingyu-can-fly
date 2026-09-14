@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<title>笨鸟先飞 · The Clumsy Bird Flies First</title>
-<meta name="description" content="苦瓜的个人项目：笨鸟先飞，一个单文件 Canvas 小游戏。点击或按空格让小鲸鱼飞起来，穿过竹竿缝隙。" />
+<title>小鲸鱼能飞 · The Little Whale Who Could Fly</title>
+<meta name="description" content="苦瓜的个人项目：小鲸鱼能飞，一个单文件 Canvas 小游戏。点击或按空格让小鲸鱼飞起来，穿过竹竿缝隙。" />
 <meta name="theme-color" content="#f7c98d" />
 <style>
   *{ box-sizing: border-box; margin: 0; padding: 0; }
@@ -43,14 +43,14 @@
 </head>
 <body>
 <a id="home" href="/">← 返回博客</a>
-<canvas id="cv" aria-label="笨鸟先飞小游戏：点击或按空格让小鲸鱼飞起来，穿过竹竿缝隙"></canvas>
+<canvas id="cv" aria-label="小鲸鱼能飞小游戏：点击或按空格让小鲸鱼飞起来，穿过竹竿缝隙"></canvas>
 <script>
 (() => {
 "use strict";
 
 /* ============================================================
-   笨鸟先飞 · The Clumsy Bird Flies First
-   一只小小的鲸鱼（笨鸟），先飞一步，勤能补拙。
+   小鲸鱼能飞 · The Little Whale Who Could Fly
+   一只小小的鲸鱼，原本笨拙，却一步一步飞过了竹竿。
    ============================================================ */
 
 // ---------- 素材：用户提供的小鲸鱼图（已去白底、居中、放大） ----------
@@ -128,7 +128,7 @@ const PIPE_SPEED = 168;    // px/s
 const BIRD_SIZE  = 70;     // 鲸鱼在画面上的边长
 const HIT_RX     = 20, HIT_RY = 17;
 
-const PHRASES = ["勤能补拙", "先飞一步", "再接再厉", "笨鸟也能飞", "熟能生巧", "别慌，稳住"];
+const PHRASES = ["勤能补拙", "先飞一步", "再接再厉", "小鲸鱼也能飞", "熟能生巧", "别慌，稳住"];
 
 // ---------- 音效（WebAudio，无外部文件） ----------
 let audio = null, muted = false;
@@ -168,7 +168,7 @@ let state = "ready";
 let bird, pipes, score, best, elapsed, spawnX, dieT, flash, shake, scrollX, phrases;
 let stepBudget = 0;
 
-best = Number(localStorage.getItem("benniao_best") || 0) || 0;
+best = Number(localStorage.getItem("xiaojingyu_best") || 0) || 0;
 
 function reset() {
   bird = { y: VH * 0.42, vy: 0, rot: -0.1, flapT: 0, squash: 0, tumbling: false };
@@ -210,7 +210,7 @@ function die() {
 
 function gameOver() {
   state = "over";
-  if (score > best) { best = score; try { localStorage.setItem("benniao_best", String(best)); } catch (e) {} }
+  if (score > best) { best = score; try { localStorage.setItem("xiaojingyu_best", String(best)); } catch (e) {} }
 }
 
 // ---------- 输入 ----------
@@ -614,11 +614,14 @@ function drawReadyPanel(t) {
   ctx.lineWidth = 10; ctx.strokeStyle = "rgba(255,255,255,.92)";
   ctx.fillStyle = "#233a52";
   const ty = 188;
-  ctx.strokeText("笨鸟先飞", VW / 2, ty);
-  ctx.fillText("笨鸟先飞", VW / 2, ty);
+  ctx.strokeText("小鲸鱼能飞", VW / 2, ty);
+  ctx.fillText("小鲸鱼能飞", VW / 2, ty);
   ctx.font = "600 15px 'PingFang SC','Microsoft YaHei',system-ui,sans-serif";
   ctx.fillStyle = "rgba(35,58,82,.75)";
-  ctx.fillText("THE CLUMSY BIRD FLIES FIRST", VW / 2, ty + 26);
+  ctx.fillText("THE LITTLE WHALE", VW / 2, ty + 26);
+  ctx.font = "600 12px 'PingFang SC','Microsoft YaHei',system-ui,sans-serif";
+  ctx.fillStyle = "rgba(35,58,82,.55)";
+  ctx.fillText("WHO COULD FLY", VW / 2, ty + 44);
 
   // 提示
   const a = 0.6 + Math.sin(t * 4) * 0.4;
@@ -654,7 +657,7 @@ function drawOverPanel() {
   ctx.font = "600 16px 'PingFang SC','Microsoft YaHei',system-ui,sans-serif";
   ctx.fillStyle = "rgba(47,65,87,.8)";
   ctx.fillText(`最高纪录 ${best}`, VW / 2, y + 142);
-  const tip = score >= best && score > 0 ? "新纪录！勤能补拙，越飞越稳。" : "笨鸟先飞，再飞一次会更好。";
+  const tip = score >= best && score > 0 ? "新纪录！勤能补拙，越飞越稳。" : "小鲸鱼能飞，再飞一次会更好。";
   ctx.fillText(tip, VW / 2, y + 170);
 
   const bx = VW / 2 - 82, by = y + h - 66, bw = 164, bh = 44;
@@ -792,7 +795,7 @@ function selfTest() {
 requestAnimationFrame(loop);
 
 // 供调试/自动化检查使用
-window.__benniao = {
+window.__xiaojingyu = {
   get state() { return state; },
   flap,
   reset,
