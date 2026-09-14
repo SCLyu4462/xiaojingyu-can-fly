@@ -1,14 +1,15 @@
 // 静态服务器 + Chrome DevTools Protocol 测试驱动（仅用 node 内置模块）
-// 用法: node _drive_whale.js
+// 用法: node tests/drive.js [--w=1440] [--h=900] [--mobile] [--tag=name]
+//   环境变量 SITE_ROOT  指定站点根目录（默认项目根），PAGE_PATH 指定测试页面（默认 index.html）
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
 
-const ROOT = path.resolve(__dirname, "..");
-const OUT = path.join(ROOT, "tests", "shots");
-const PORT = 8123;
+const ROOT = process.env.SITE_ROOT ? path.resolve(process.env.SITE_ROOT) : path.resolve(__dirname, "..");
+const OUT = process.env.SHOT_DIR ? path.resolve(process.env.SHOT_DIR) : path.join(ROOT, "tests", "shots");
+const PORT = Number(process.env.SITE_PORT || 8123);
 const CDP = "http://127.0.0.1:" + (process.env.CDP_PORT || 9333);
-const PAGE_URL = `http://127.0.0.1:${PORT}/index.html`;
+const PAGE_URL = `http://127.0.0.1:${PORT}/${process.env.PAGE_PATH || "index.html"}`;
 
 // 视口参数: --w=820 --h=1180 [--mobile] [--tag=name]
 const argv = process.argv.slice(2);
@@ -20,7 +21,8 @@ const TAG = arg("tag", `${VW_PX}x${VH_PX}`);
 const VH_GROUND_GUARD = 500;   // 落地后 y 一定在画面下方
 
 fs.mkdirSync(OUT, { recursive: true });
-const LOGFILE = path.join(ROOT, "tests", "drive-log.txt");
+const LOGFILE = path.join(OUT, "..", "drive-log.txt");
+fs.mkdirSync(path.dirname(LOGFILE), { recursive: true });
 fs.writeFileSync(LOGFILE, "");
 const log = (...a) => {
   const line = a.map(x => (typeof x === "string" ? x : JSON.stringify(x))).join(" ");

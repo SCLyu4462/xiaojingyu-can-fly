@@ -99,8 +99,21 @@ tools/make_bird_sprite.py   source art -> game sprite
 tools/repack_sprite.py      re-embed the sprite into index.html
 tests/drive.js              automated regression suite (18 assertions)
 tests/serve.js              tiny static server for the tests
+deploy/heyuankugua.xyz/     site-specific files for heyuankugua.xyz/benniao/
 README.zh-CN.md             Chinese write-up: mechanics, bug log, limitations
 ```
+
+### Site deployment (`deploy/heyuankugua.xyz/`)
+
+Self-hosting on the author's blog needs two extra bits on top of `index.html`:
+
+* a `#home` pill in the top-left corner linking back to the blog
+* a third `.project-card` block on the blog landing page
+
+`deploy/heyuankugua.xyz/` keeps both files ready to upload plus the step-by-step
+instructions. Note it holds a *frozen copy* of the game page for that host — the
+canonical source is the root `index.html`, so re-apply the two additions (and the
+`<meta>` tags) if the game changes.
 
 ## License
 
