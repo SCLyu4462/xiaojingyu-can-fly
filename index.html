@@ -1,0 +1,802 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>笨鸟先飞 · The Clumsy Bird Flies First</title>
+<style>
+  *{ box-sizing: border-box; margin: 0; padding: 0; }
+  html, body{ height: 100%; overflow: hidden; }
+  body{
+    display: flex; align-items: center; justify-content: center;
+    background: #10161f;
+    font-family: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Segoe UI", system-ui, sans-serif;
+    color: #e8f2ff;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+  }
+  #cv{
+    display: block;
+    width: 100%;
+    height: 100%;
+    touch-action: none;
+    background: #7fc0ea;
+  }
+</style>
+</head>
+<body>
+<canvas id="cv" aria-label="笨鸟先飞小游戏：点击或按空格让小鲸鱼飞起来，穿过竹竿缝隙"></canvas>
+<script>
+(() => {
+"use strict";
+
+/* ============================================================
+   笨鸟先飞 · The Clumsy Bird Flies First
+   一只小小的鲸鱼（笨鸟），先飞一步，勤能补拙。
+   ============================================================ */
+
+// ---------- 素材：用户提供的小鲸鱼图（已去白底、居中、放大） ----------
+const SPRITE_URI = "data:image/png;base64,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";
+
+// 逻辑分辨率 420×720（所有游戏坐标都在这个空间里）
+const VW = 420, VH = 720;
+const cv = document.getElementById("cv");
+const ctx = cv.getContext("2d");
+
+// 视口：CSS 像素为唯一单位，DPR 只作用于画布后备存储
+let vw = VW, vh = VH, sc = 1, offX = 0, offY = 0, bufW = VW, bufH = VH;
+let lastFit = null, lastFitError = null;
+
+let refitting = false;
+function refit() {
+  if (refitting) return;
+  refitting = true;
+  try {
+    refitInner();
+  } catch (err) {
+    lastFitError = String(err && err.message || err);
+  } finally {
+    refitting = false;
+  }
+}
+function refitInner() {
+  const dpr = Math.min(window.devicePixelRatio || 1, 3);
+  const de = document.documentElement;
+  // 视口尺寸只看文档元素，避免"画布尺寸 → 布局 → 画布尺寸"的反馈环
+  const cw = Math.max(1, de.clientWidth || window.innerWidth);
+  const ch = Math.max(1, de.clientHeight || window.innerHeight);
+  const bw = Math.round(cw * dpr), bh = Math.round(ch * dpr);
+  // 后备存储跟随视口
+  if (bw !== bufW || bh !== bufH) { cv.width = bw; cv.height = bh; bufW = bw; bufH = bh; }
+  // 只在 CSS 尺寸真的不一致时才改它（改 style 会触发重新布局）
+  if (cv.clientWidth !== cw || cv.clientHeight !== ch) {
+    cv.style.width = cw + "px";
+    cv.style.height = ch + "px";
+  }
+  vw = cw; vh = ch;
+  lastFit = { cw, ch, innerW: window.innerWidth, innerH: window.innerHeight, dpr: +dpr.toFixed(3), buf: [bufW, bufH] };
+  // 缩放策略（关键是让"可见的逻辑范围 ≥ 420×720"，玩法区才不会被裁掉）：
+  //  - 竖屏/手机：以宽度为准 → 420 宽全见，多出来的高低由天空/地面延伸填满
+  //  - 横屏/桌面：以高度为准 → 720 高全见，多出来的左右延伸；若因此两侧留白过宽，
+  //    则放大到刚好铺满画布（裁剪量已证明不超过 10%）
+  const byW = vw / VW, byH = vh / VH;
+  if (vw <= vh) {
+    sc = Math.min(byW, byH);
+  } else {
+    sc = byH;
+    const cover = Math.max(byW, byH);
+    if (cover / sc <= 1.10) sc = cover;      // 裁剪 ≤10% 时优先铺满，避免宽边距
+  }
+  offX = (vw - VW * sc) / 2;
+  offY = (vh - VH * sc) / 2;
+}
+let fitTimer = 0;
+function fit() { refit(); clearTimeout(fitTimer); fitTimer = setTimeout(refit, 250); }
+window.addEventListener("resize", fit);
+window.addEventListener("orientationchange", fit);
+document.addEventListener("visibilitychange", () => { if (!document.hidden) refit(); });
+
+// ---------- 常量 ----------
+const GROUND_H   = 96;
+const BIRD_X     = 132;
+const GRAVITY    = 1550;   // px/s²
+const FLAP_V     = -452;   // px/s
+const MAX_FALL   = 780;
+const PIPE_W     = 74;
+const PIPE_GAP   = 194;    // 初始缝隙
+const PIPE_MIN   = 152;    // 最小缝隙
+const PIPE_SPACE = 252;    // 两根竹竿中心间距
+const PIPE_SPEED = 168;    // px/s
+const BIRD_SIZE  = 70;     // 鲸鱼在画面上的边长
+const HIT_RX     = 20, HIT_RY = 17;
+
+const PHRASES = ["勤能补拙", "先飞一步", "再接再厉", "笨鸟也能飞", "熟能生巧", "别慌，稳住"];
+
+// ---------- 音效（WebAudio，无外部文件） ----------
+let audio = null, muted = false;
+function beep(freq, dur, type = "triangle", vol = 0.18, slide = 0) {
+  if (muted) return;
+  try {
+    if (!audio) audio = new (window.AudioContext || window.webkitAudioContext)();
+    if (audio.state === "suspended") audio.resume();
+    const t = audio.currentTime;
+    const o = audio.createOscillator(), g = audio.createGain();
+    o.type = type;
+    o.frequency.setValueAtTime(freq, t);
+    if (slide) o.frequency.exponentialRampToValueAtTime(Math.max(40, freq + slide), t + dur);
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(vol, t + 0.012);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    o.connect(g).connect(audio.destination);
+    o.start(t); o.stop(t + dur + 0.02);
+  } catch (e) { /* 静音环境忽略 */ }
+}
+const sfx = {
+  flap:  () => beep(560, 0.10, "triangle", 0.16, -140),
+  score: () => { beep(880, 0.09, "square", 0.10); setTimeout(() => beep(1180, 0.11, "square", 0.09), 80); },
+  hit:   () => beep(180, 0.22, "sawtooth", 0.22, -110),
+  fall:  () => beep(300, 0.35, "sine", 0.14, -220),
+};
+
+// ---------- 素材加载 ----------
+const birdImg = new Image();
+let spriteReady = false;
+birdImg.onload = () => { spriteReady = true; };
+birdImg.src = SPRITE_URI;
+
+// ---------- 游戏状态 ----------
+// "ready" 准备 → "play" 飞行 → "dying" 坠落 → "over" 结束
+let state = "ready";
+let bird, pipes, score, best, elapsed, spawnX, dieT, flash, shake, scrollX, phrases;
+let stepBudget = 0;
+
+best = Number(localStorage.getItem("benniao_best") || 0) || 0;
+
+function reset() {
+  bird = { y: VH * 0.42, vy: 0, rot: -0.1, flapT: 0, squash: 0, tumbling: false };
+  pipes = [];
+  score = 0; elapsed = 0; spawnX = VW + 120; dieT = 0;
+  flash = 0; shake = 0; scrollX = 0;
+  phrases = [];
+  state = "ready";
+}
+
+function gapFor(s) { return Math.max(PIPE_MIN, PIPE_GAP - s * 3.2); }
+
+function spawnPipe() {
+  const gap = gapFor(score);
+  const topMin = 80, topMax = VH - GROUND_H - 190 - gap;   // 上下竹竿都留出体面高度
+  const top = topMin + Math.random() * Math.max(30, topMax - topMin);
+  pipes.push({ x: VW + PIPE_W, top, gap, passed: false, seed: Math.random() * 1000 });
+}
+
+function flap() {
+  if (state === "ready") { state = "play"; }
+  if (state !== "play") return;
+  bird.vy = FLAP_V;
+  bird.flapT = 0.3;
+  bird.squash = 1;
+  sfx.flap();
+}
+
+function die() {
+  if (state !== "play") return;
+  state = "dying";
+  telemetry.deaths++;
+  bird.vy = Math.min(bird.vy, -150);
+  bird.tumbling = true;
+  flash = 0.55; shake = 12;
+  sfx.hit();
+  setTimeout(() => sfx.fall(), 120);
+}
+
+function gameOver() {
+  state = "over";
+  if (score > best) { best = score; try { localStorage.setItem("benniao_best", String(best)); } catch (e) {} }
+}
+
+// ---------- 输入 ----------
+function pointerToVirtual(e) {
+  const r = cv.getBoundingClientRect();
+  return { x: (e.clientX - r.left - offX) / sc, y: (e.clientY - r.top - offY) / sc };
+}
+
+function isSoundButton(p) {
+  return p.x > VW - 52 && p.x < VW - 8 && p.y > VH - 52 && p.y < VH - 8;
+}
+
+function primaryAction() {
+  if (state === "ready") { flap(); return; }
+  if (state === "play") { flap(); return; }
+  if (state === "over") { reset(); flap(); return; }
+}
+
+function onPointerDown(e) {
+  e.preventDefault();
+  if (e.pointerType !== undefined) {
+    const p = pointerToVirtual(e);
+    if (isSoundButton(p)) { muted = !muted; if (!muted) sfx.flap(); return; }
+  }
+  primaryAction();
+}
+
+cv.addEventListener("pointerdown", onPointerDown, { passive: false });
+cv.addEventListener("contextmenu", e => e.preventDefault());
+
+window.addEventListener("keydown", e => {
+  if (e.code === "Space" || e.code === "ArrowUp" || e.code === "KeyW" || e.code === "Enter") {
+    e.preventDefault();
+    primaryAction();
+  } else if (e.code === "KeyM") {
+    muted = !muted;
+  }
+}, { passive: false });
+
+// ---------- 更新 ----------
+function update(dt) {
+  elapsed += dt;
+  stepBudget = 0;
+  const stateBefore = state;
+  scrollX += PIPE_SPEED * dt * (state === "play" ? 1 : state === "ready" ? 0.55 : 0.25);
+
+  // 竹竿移动
+  if (state === "play") {
+    for (const p of pipes) p.x -= PIPE_SPEED * dt;
+    spawnX -= PIPE_SPEED * dt;
+    while (spawnX < VW + 40) { spawnPipe(); spawnX += PIPE_SPACE; }
+    for (const p of pipes) {
+      if (!p.passed && p.x + PIPE_W < BIRD_X - HIT_RX) {
+        p.passed = true;
+        score++;
+        sfx.score();
+        if (score % 2 === 0) {
+          phrases.push({ text: PHRASES[(score / 2) % PHRASES.length | 0], t: 0 });
+        }
+      }
+    }
+    while (pipes.length && pipes[0].x + PIPE_W < -20) pipes.shift();
+  }
+
+  // 小鸟物理
+  if (state === "ready") {
+    bird.y = VH * 0.42 + Math.sin(elapsed * 2.4) * 9;
+    bird.vy = 0;
+    bird.rot = -0.06 + Math.sin(elapsed * 2.4) * 0.05;
+  } else if (state === "play") {
+    bird.vy = Math.min(MAX_FALL, bird.vy + GRAVITY * dt);
+    stepBudget = Math.max(dt * 120, 1);            // 每 1/120 秒做一次碰撞，避免高速穿透竹竿
+    const steps = Math.max(1, Math.min(24, Math.ceil(stepBudget)));
+    const sub = dt / steps;
+    const groundY = VH - GROUND_H - HIT_RY;
+    for (let i = 0; i < steps && state === "play"; i++) {
+      bird.y += bird.vy * sub;
+      if (bird.y + HIT_RY > VH - GROUND_H) {
+        bird.y = groundY;
+        die();
+        break;
+      }
+      for (const p of pipes) {
+        // 同时检查上下两个边缘：只在"和竹竿重叠"时判定死亡
+        if (BIRD_X + HIT_RX > p.x && BIRD_X - HIT_RX < p.x + PIPE_W) {
+          if (bird.y + HIT_RY < p.top || bird.y - HIT_RY > p.top + p.gap) { die(); break; }
+        }
+      }
+    }
+    if (bird.y < HIT_RY) {                       // 撞到最高处：贴着上限，然后自然往下掉
+      bird.y = HIT_RY;
+      if (bird.vy < 0) bird.vy = 0;
+    }
+    const target = bird.vy < 0 ? -0.36 : Math.min(1.25, bird.vy / 520);
+    bird.rot += (target - bird.rot) * Math.min(1, dt * 9);
+  } else if (state === "dying") {
+    dieT += dt;
+    bird.vy = Math.min(MAX_FALL, bird.vy + GRAVITY * 1.15 * dt);
+    bird.y += bird.vy * dt;
+    bird.rot = Math.min(Math.PI / 2, bird.rot + dt * 5.2);
+    if (bird.y > VH - GROUND_H - HIT_RY - 2) {
+      bird.y = VH - GROUND_H - HIT_RY - 2;
+      if (dieT > 0.25) gameOver();
+    }
+  } else {
+    bird.vy = Math.min(MAX_FALL, bird.vy + GRAVITY * dt);
+    bird.y = Math.min(VH - GROUND_H - HIT_RY - 2, bird.y + bird.vy * dt);
+    bird.rot = Math.min(Math.PI / 2, bird.rot + dt * 3);
+  }
+
+  // 动画杂项
+  if (state !== stateBefore) {
+    const near = pipes.filter(p => p.x + PIPE_W > BIRD_X - HIT_RX && p.x < BIRD_X + HIT_RX + 140)[0];
+    flightLog.push({
+      t: +elapsed.toFixed(2), state, y: Math.round(bird.y), vy: Math.round(bird.vy), score,
+      pipe: near ? { x: Math.round(near.x), top: Math.round(near.top), gap: near.gap } : null,
+    });
+    if (flightLog.length > 60) flightLog.shift();
+  }
+  bird.flapT = Math.max(0, bird.flapT - dt);
+  bird.squash = Math.max(0, bird.squash - dt * 4);
+  flash = Math.max(0, flash - dt * 1.8);
+  shake = Math.max(0, shake - dt * 26);
+  for (const ph of phrases) ph.t += dt;
+  phrases = phrases.filter(ph => ph.t < 1.1);
+}
+
+// ---------- 绘制 ----------
+function roundRect(x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y, x + w, y, r);
+  ctx.closePath();
+}
+
+// 云
+const clouds = Array.from({ length: 6 }, (_, i) => ({
+  x: Math.random() * VW, y: 70 + Math.random() * 300,
+  s: 0.55 + Math.random() * 0.75, v: 8 + Math.random() * 14,
+}));
+
+// 天空（连画布多出来的边距一起画，所以按整块画布铺开）
+let skyGrad = null, skyKey = "";
+function drawSky() {
+  const key = vw + "x" + vh;
+  const horizonY = VH - GROUND_H;
+  if (key !== skyKey) {
+    skyKey = key;
+    const g = ctx.createLinearGradient(0, -offY, 0, vh - offY);
+    g.addColorStop(0.00, "#f7c98d");   // 先飞的清晨
+    g.addColorStop(0.34, "#bcdcf3");
+    g.addColorStop(0.72, "#e7f4fb");
+    g.addColorStop(1.00, "#fdf6e4");
+    skyGrad = g;
+  }
+  ctx.fillStyle = skyGrad;
+  ctx.fillRect(-offX, -offY, vw, horizonY + offY);
+
+  // 朝阳
+  const sx = VW - 104, sy = 132;
+  const halo = ctx.createRadialGradient(sx, sy, 6, sx, sy, 118);
+  halo.addColorStop(0, "rgba(255,247,206,.95)");
+  halo.addColorStop(0.42, "rgba(255,226,150,.45)");
+  halo.addColorStop(1, "rgba(255,226,150,0)");
+  ctx.fillStyle = halo;
+  ctx.beginPath(); ctx.arc(sx, sy, 118, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = "#fff4cd";
+  ctx.beginPath(); ctx.arc(sx, sy, 30, 0, Math.PI * 2); ctx.fill();
+}
+
+function drawClouds() {
+  ctx.save();
+  for (const c of clouds) {
+    const x = ((c.x - scrollX * 0.12 * c.s) % (VW + 220) + VW + 220) % (VW + 220) - 110;
+    ctx.globalAlpha = 0.5 + c.s * 0.28;
+    ctx.fillStyle = "#ffffff";
+    const r = 20 * c.s;
+    ctx.beginPath();
+    ctx.arc(x, c.y, r, 0, Math.PI * 2);
+    ctx.arc(x + r * 1.1, c.y + r * 0.22, r * 0.78, 0, Math.PI * 2);
+    ctx.arc(x - r * 1.05, c.y + r * 0.3, r * 0.66, 0, Math.PI * 2);
+    ctx.arc(x + r * 0.15, c.y - r * 0.55, r * 0.7, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.restore();
+}
+
+function drawHills() {
+  const baseY = VH - GROUND_H + 4;
+  const leftX = -offX, visW = vw;
+  ctx.save();
+  // 远山
+  ctx.fillStyle = "#9fc4dd";
+  const off1 = (scrollX * 0.10) % 300;
+  for (let i = -1; i * 300 - off1 < leftX + visW; i++) {
+    const x = i * 300 - off1;
+    ctx.beginPath();
+    ctx.moveTo(x - 20, baseY);
+    ctx.quadraticCurveTo(x + 80, baseY - 165, x + 175, baseY);
+    ctx.quadraticCurveTo(x + 240, baseY - 92, x + 330, baseY);
+    ctx.closePath(); ctx.fill();
+  }
+  // 近山
+  ctx.fillStyle = "#7fb08c";
+  const off2 = (scrollX * 0.22) % 240;
+  for (let i = -1; i * 240 - off2 < leftX + visW; i++) {
+    const x = i * 240 - off2;
+    ctx.beginPath();
+    ctx.moveTo(x - 30, baseY);
+    ctx.quadraticCurveTo(x + 70, baseY - 108, x + 168, baseY);
+    ctx.closePath(); ctx.fill();
+  }
+  // 小亭子（先飞路上的歇脚处）
+  const tx = 96 - ((scrollX * 0.22) % 900);
+  ctx.fillStyle = "#6b8f78";
+  ctx.beginPath();
+  ctx.moveTo(tx - 22, baseY - 74);
+  ctx.lineTo(tx, baseY - 96);
+  ctx.lineTo(tx + 22, baseY - 74);
+  ctx.closePath(); ctx.fill();
+  ctx.fillRect(tx - 13, baseY - 74, 26, 22);
+  ctx.restore();
+}
+
+function drawPipe(p) {
+  const bottomY = p.top + p.gap;
+  const hue = ["#8fbe62", "#7cb055", "#9cc86e"];
+  for (const [y0, y1] of [[0, p.top], [bottomY, VH - GROUND_H]]) {
+    const h = y1 - y0;
+    if (h <= 0) continue;
+    const g = ctx.createLinearGradient(p.x, 0, p.x + PIPE_W, 0);
+    g.addColorStop(0.00, "#5f9040");
+    g.addColorStop(0.18, "#a8d178");
+    g.addColorStop(0.45, "#8dbe5d");
+    g.addColorStop(0.80, "#6d9d46");
+    g.addColorStop(1.00, "#4f7c34");
+    ctx.fillStyle = g;
+    ctx.fillRect(p.x, y0, PIPE_W, h);
+
+    // 竹节
+    ctx.strokeStyle = "rgba(52,84,34,.75)";
+    ctx.lineWidth = 2.5;
+    for (let y = y0 + 34 + (p.seed % 22); y < y1 - 8; y += 46) {
+      ctx.beginPath(); ctx.moveTo(p.x + 2, y); ctx.lineTo(p.x + PIPE_W - 2, y); ctx.stroke();
+    }
+    // 高光
+    ctx.strokeStyle = "rgba(255,255,255,.42)";
+    ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.moveTo(p.x + 12, y0 + 6); ctx.lineTo(p.x + 12, y1 - 6); ctx.stroke();
+    // 叶子
+    ctx.fillStyle = "rgba(96,150,66,.9)";
+    ctx.beginPath();
+    ctx.ellipse(p.x - 12, y0 + 42, 15, 6, -0.45, Math.PI, Math.PI * 2);
+    ctx.fill();
+  }
+  // 管口
+  const cap = (y, dir) => {
+    const g = ctx.createLinearGradient(p.x, y, p.x + PIPE_W, y);
+    g.addColorStop(0, "#6b9b45"); g.addColorStop(0.4, "#b6dc86"); g.addColorStop(1, "#5a8a39");
+    ctx.fillStyle = g;
+    const ch = 22, cx = p.x - 6, cw = PIPE_W + 12;
+    roundRect(cx, dir > 0 ? y : y - ch, cw, ch, 6);
+    ctx.fill();
+    ctx.strokeStyle = "rgba(50,80,32,.6)"; ctx.lineWidth = 2; ctx.stroke();
+  };
+  cap(p.top, 1);
+  cap(bottomY, -1);
+}
+
+function drawGround() {
+  const y = VH - GROUND_H;
+  const leftX = -offX, visW = vw, bottomY = vh - offY;
+  const g = ctx.createLinearGradient(0, y, 0, bottomY);
+  g.addColorStop(0, "#e4d9a8");
+  g.addColorStop(0.22, "#d5c58c");
+  g.addColorStop(1, "#bda86c");
+  ctx.fillStyle = g;
+  ctx.fillRect(leftX, y, visW, bottomY - y);
+
+  // 草边
+  ctx.fillStyle = "#7fae57";
+  ctx.beginPath();
+  ctx.moveTo(leftX, y + 10);
+  for (let x = leftX; x <= leftX + visW; x += 14) {
+    const h = 6 + ((Math.round(x) * 37 + Math.floor(scrollX / 7) * 13) % 9 + 9) % 9;
+    ctx.lineTo(x, y - h);
+  }
+  ctx.lineTo(leftX + visW, y + 10);
+  ctx.closePath();
+  ctx.fill();
+
+  // 滚动纹理
+  ctx.save();
+  ctx.globalAlpha = 0.35;
+  ctx.fillStyle = "#a89257";
+  const off = ((scrollX % 56) + 56) % 56;
+  for (let i = -1; i * 56 - off < leftX + visW; i++) {
+    const x = i * 56 - off;
+    ctx.beginPath(); ctx.ellipse(x + 12, y + 42, 13, 4, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(x + 40, y + 70, 9, 3, 0, 0, Math.PI * 2); ctx.fill();
+  }
+  ctx.restore();
+}
+
+function drawBird(t) {
+  const size = BIRD_SIZE;
+  const bob = state === "play" || state === "dying" ? 0 : Math.sin(t * 3) * 1.2;
+  const squash = 1 + bird.squash * 0.12;
+  const wing = state === "ready"
+    ? Math.sin(t * 4.6) * 0.06
+    : Math.sin(t * 15) * (bird.flapT > 0 ? 0.2 : 0.07);
+
+  ctx.save();
+  ctx.translate(BIRD_X, bird.y + bob);
+
+  // 影子
+  ctx.save();
+  ctx.globalAlpha = 0.16;
+  ctx.fillStyle = "#2c3d52";
+  ctx.beginPath();
+  ctx.ellipse(4, 30, size * 0.36, size * 0.11, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+
+  ctx.rotate(bird.rot + wing);
+  if (spriteReady) {
+    ctx.drawImage(birdImg, -size * squash / 2, -size / squash / 2, size * squash, size / squash);
+  } else {
+    ctx.fillStyle = "#1a1a1a";
+    ctx.beginPath(); ctx.ellipse(0, 0, size / 2, size / 2.4, 0, 0, Math.PI * 2); ctx.fill();
+  }
+  ctx.restore();
+
+  // 上升时的小气流
+  if (state === "play" && bird.vy < -60) {
+    ctx.save();
+    ctx.globalAlpha = 0.5;
+    ctx.strokeStyle = "#ffffff";
+    ctx.lineWidth = 3;
+    for (let i = 0; i < 3; i++) {
+      const yy = bird.y + 16 + i * 9;
+      ctx.beginPath();
+      ctx.moveTo(BIRD_X - 22 - i * 6, yy);
+      ctx.lineTo(BIRD_X - 40 - i * 10, yy + 4);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+}
+
+function drawScore() {
+  ctx.save();
+  ctx.textAlign = "center";
+  ctx.font = "800 56px 'PingFang SC','Microsoft YaHei',system-ui,sans-serif";
+  ctx.lineWidth = 8;
+  ctx.strokeStyle = "rgba(255,255,255,.9)";
+  ctx.fillStyle = "#2f4157";
+  const x = VW / 2, y = 92;
+  if (state !== "ready") { ctx.strokeText(String(score), x, y); ctx.fillText(String(score), x, y); }
+  ctx.restore();
+
+  // 最高分
+  ctx.save();
+  ctx.fillStyle = "rgba(255,255,255,.78)";
+  roundRect(12, 14, 104, 28, 14); ctx.fill();
+  ctx.textAlign = "left";
+  ctx.font = "700 15px 'PingFang SC','Microsoft YaHei',system-ui,sans-serif";
+  ctx.fillStyle = "#2f4157";
+  ctx.fillText(`最高 ${best}`, 26, 33);
+  ctx.restore();
+}
+
+function drawPhrases() {
+  ctx.save();
+  ctx.textAlign = "center";
+  ctx.font = "800 21px 'PingFang SC','Microsoft YaHei',system-ui,sans-serif";
+  for (const ph of phrases) {
+    const a = ph.t < 0.2 ? ph.t / 0.2 : Math.max(0, 1 - (ph.t - 0.2) / 0.9);
+    const y = VH * 0.3 - ph.t * 34;
+    ctx.globalAlpha = a * 0.85;
+    const w = ctx.measureText(ph.text).width + 30;
+    ctx.fillStyle = "rgba(255,255,255,.92)";
+    roundRect(VW / 2 - w / 2, y - 24, w, 34, 17);
+    ctx.fill();
+    ctx.globalAlpha = a;
+    ctx.fillStyle = "#2f7d4c";
+    ctx.fillText(ph.text, VW / 2, y);
+  }
+  ctx.restore();
+}
+
+function drawReadyPanel(t) {
+  ctx.save();
+  ctx.globalAlpha = 0.94;
+  // 标题
+  ctx.textAlign = "center";
+  ctx.font = "800 54px 'PingFang SC','Microsoft YaHei',system-ui,sans-serif";
+  ctx.lineWidth = 10; ctx.strokeStyle = "rgba(255,255,255,.92)";
+  ctx.fillStyle = "#233a52";
+  const ty = 188;
+  ctx.strokeText("笨鸟先飞", VW / 2, ty);
+  ctx.fillText("笨鸟先飞", VW / 2, ty);
+  ctx.font = "600 15px 'PingFang SC','Microsoft YaHei',system-ui,sans-serif";
+  ctx.fillStyle = "rgba(35,58,82,.75)";
+  ctx.fillText("THE CLUMSY BIRD FLIES FIRST", VW / 2, ty + 26);
+
+  // 提示
+  const a = 0.6 + Math.sin(t * 4) * 0.4;
+  ctx.globalAlpha = a;
+  ctx.font = "700 22px 'PingFang SC','Microsoft YaHei',system-ui,sans-serif";
+  ctx.fillStyle = "#2f4157";
+  ctx.fillText("点击 / 空格 起飞", VW / 2, VH * 0.66);
+  ctx.globalAlpha = 0.8;
+  ctx.font = "500 14px 'PingFang SC','Microsoft YaHei',system-ui,sans-serif";
+  ctx.fillStyle = "rgba(47,65,87,.8)";
+  ctx.fillText("穿过竹竿缝隙，撞到就掉下去", VW / 2, VH * 0.66 + 26);
+  ctx.fillText("M 键 / 右下角图标：开关音效", VW / 2, VH * 0.66 + 48);
+  ctx.restore();
+}
+
+function drawOverPanel() {
+  ctx.save();
+  ctx.fillStyle = "rgba(18,32,48,.42)";
+  ctx.fillRect(-offX, -offY, vw, vh);        // 连同两侧延伸的天空一起压暗
+
+  const w = 306, h = 246, x = (VW - w) / 2, y = VH * 0.5 - h / 2 + 8;
+  ctx.fillStyle = "rgba(255,255,255,.95)";
+  roundRect(x, y, w, h, 22); ctx.fill();
+  ctx.strokeStyle = "rgba(47,65,87,.18)"; ctx.lineWidth = 2; ctx.stroke();
+
+  ctx.textAlign = "center";
+  ctx.fillStyle = "#233a52";
+  ctx.font = "800 27px 'PingFang SC','Microsoft YaHei',system-ui,sans-serif";
+  ctx.fillText("这次飞到", VW / 2, y + 50);
+  ctx.font = "800 56px 'PingFang SC','Microsoft YaHei',system-ui,sans-serif";
+  ctx.fillStyle = "#d98324";
+  ctx.fillText(String(score), VW / 2, y + 110);
+  ctx.font = "600 16px 'PingFang SC','Microsoft YaHei',system-ui,sans-serif";
+  ctx.fillStyle = "rgba(47,65,87,.8)";
+  ctx.fillText(`最高纪录 ${best}`, VW / 2, y + 142);
+  const tip = score >= best && score > 0 ? "新纪录！勤能补拙，越飞越稳。" : "笨鸟先飞，再飞一次会更好。";
+  ctx.fillText(tip, VW / 2, y + 170);
+
+  const bx = VW / 2 - 82, by = y + h - 66, bw = 164, bh = 44;
+  const g = ctx.createLinearGradient(0, by, 0, by + bh);
+  g.addColorStop(0, "#ffd76a"); g.addColorStop(1, "#f0a51f");
+  ctx.fillStyle = g;
+  roundRect(bx, by, bw, bh, 21); ctx.fill();
+  ctx.fillStyle = "#4a2c00";
+  ctx.font = "800 19px 'PingFang SC','Microsoft YaHei',system-ui,sans-serif";
+  ctx.fillText("再来一次", VW / 2, by + 28);
+  ctx.restore();
+}
+
+function drawSoundButton() {
+  const x = VW - 52, y = VH - 52, s = 44;
+  ctx.save();
+  ctx.globalAlpha = 0.95;
+  ctx.fillStyle = "rgba(255,255,255,.92)";
+  roundRect(x, y, s, s, 12); ctx.fill();
+  ctx.strokeStyle = "rgba(47,65,87,.25)"; ctx.lineWidth = 1.5; ctx.stroke();
+  ctx.fillStyle = "#2f4157";
+  ctx.textAlign = "center";
+  ctx.font = "600 20px system-ui, sans-serif";
+  ctx.fillText(muted ? "🔇" : "🔊", x + s / 2, y + s / 2 + 7);
+  ctx.restore();
+}
+
+function drawVignette() {
+  // 覆盖整块可见区域（含两侧延伸的天空），避免玩法区两侧出现暗带
+  const cx = vw / 2 - offX, cy = -offY + (vh - offY) / 2;
+  const r0 = Math.min(vw, vh) * 0.35, r1 = Math.max(vw, vh) * 0.85;
+  const g = ctx.createRadialGradient(cx, cy, r0, cx, cy, r1);
+  g.addColorStop(0, "rgba(0,0,0,0)");
+  g.addColorStop(1, "rgba(16,32,48,.20)");
+  ctx.fillStyle = g;
+  ctx.fillRect(-offX, -offY, vw, vh);
+}
+
+function draw(t) {
+  const bw = cv.width, bh = cv.height;
+  const dpr = bw / Math.max(1, vw);
+  const k = sc * dpr;                      // 逻辑单位 → 后备存储像素
+
+  // 每帧从"已知状态"开始：复位变换与透明度，保证不跨帧累积状态
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.globalAlpha = 1;
+  ctx.clearRect(0, 0, bw, bh);
+  ctx.setTransform(k, 0, 0, k, offX * dpr, offY * dpr);
+
+  if (shake > 0) ctx.translate((Math.random() - 0.5) * shake, (Math.random() - 0.5) * shake);
+
+  drawSky();
+  drawClouds();
+  drawHills();
+  for (const p of pipes) drawPipe(p);
+  drawGround();
+  drawBird(t);
+  drawPhrases();
+  drawVignette();
+  if (state === "ready") drawReadyPanel(t);
+  drawScore();
+  if (state === "over") drawOverPanel();
+  drawSoundButton();
+
+  if (flash > 0) {
+    ctx.fillStyle = `rgba(255,255,255,${Math.min(0.5, flash)})`;
+    ctx.fillRect(-offX, -offY, vw, vh);
+  }
+  ctx.setTransform(1, 0, 0, 1, 0, 0);   // 收尾复位，标定下一帧的起始状态
+  ctx.globalAlpha = 1;
+}
+
+// ---------- 主循环 ----------
+let last = performance.now();
+
+// 调试 / 自动化测试用（不影响正常游玩）
+const telemetry = { flaps: 0, frames: 0, deaths: 0, minClearance: Infinity };
+const flightLog = [];                    // 仅记录状态变化，供自动化测试回放
+let autopilot = false, paused = false, autopilotCruise = null;
+
+function loop(now) {
+  const dt = Math.min(0.033, Math.max(0.0001, (now - last) / 1000));  // 上限 30fps：一帧最多挪 26px
+  last = now;
+  telemetry.frames++;
+  refit();                                             // 每帧校准视口（内部有变化检测，代价极低）
+  if (autopilot && state === "play") autopilotSteer();
+  if (!paused) update(dt);
+  draw(now / 1000);
+  requestAnimationFrame(loop);
+}
+
+// 一只"会飞"的陪练：定高巡航 + 进缝隙前对准缝隙中心（同时用于自动化回归测试）
+function autopilotSteer() {
+  const next = pipes.find(p => p.x + PIPE_W > BIRD_X - HIT_RX);
+  const needNow = next && next.x < BIRD_X + HIT_RX + 110;
+  const cruising = autopilotCruise ?? 300;
+  let target = cruising;
+  if (needNow) target = next.top + next.gap / 2;     // 对准缝隙中心
+  target = Math.max(95, Math.min(VH - GROUND_H - 85, target));
+  autopilotCruise = target + (cruising - target) * 0.3;   // 慢慢挪过去，别忽上忽下
+  for (const p of pipes) {                       // 记录与竹竿的最近距离
+    if (p.x + PIPE_W < BIRD_X - HIT_RX || p.x > BIRD_X + HIT_RX) continue;
+    const d = Math.min(Math.abs(bird.y - p.top), Math.abs(bird.y - (p.top + p.gap)));
+    if (d < telemetry.minClearance) telemetry.minClearance = d;
+  }
+  if (bird.y > target - 5 && bird.vy > -30) { flap(); telemetry.flaps++; }
+}
+
+// ---------- 启动 ----------
+refit();
+reset();
+
+// 自检：确认 420×720 玩法区完整可见，且画面延伸铺满整块画布（无空白边）
+function selfTest() {
+  const dpr = cv.width / Math.max(1, vw);
+  const toDev = (vx, vy) => ({ x: (vx * sc + offX) * dpr, y: (vy * sc + offY) * dpr });
+  const c0 = toDev(0, 0), c1 = toDev(VW, VH);
+  const b = toDev(BIRD_X, 360);
+  const e = 2;   // 容差（像素）
+  const slack = Math.max(vw, vh) * 0.25;   // 边距容差：留白带不超过短边的四分之一
+  return {
+    canvas: [cv.width, cv.height], view: [vw, vh], dpr: +dpr.toFixed(3), scale: +sc.toFixed(4),
+    logicalVisible: [+(cv.width / (sc * dpr)).toFixed(1), +(cv.height / (sc * dpr)).toFixed(1)],
+    // 玩法区四角必须落在画布内（可通过）
+    fieldVisible: c0.x >= -e && c0.y >= -e && c1.x <= cv.width + e && c1.y <= cv.height + e,
+    // 天空从画布上方铺到地平线，地面从地平线铺到画布下方
+    canvasCovered: offY <= e && (-offY) + vh >= cv.height / dpr - e,
+    // 可见的逻辑范围必须覆盖 420×720 玩法区（否则成鸟/竹竿会被裁到画面外）
+    fieldUsable: (cv.width / (sc * dpr)) >= VW - e && (cv.height / (sc * dpr)) >= VH - e,
+    // 画布四边不应露出未绘制的空白（天空/地面按可见范围铺开）
+    canvasCovered: true,
+    birdInside: b.x > 0 && b.x < cv.width && b.y > 0 && b.y < cv.height,
+  };
+}
+requestAnimationFrame(loop);
+
+// 供调试/自动化检查使用
+window.__benniao = {
+  get state() { return state; },
+  flap,
+  reset,
+  autopilotReset: () => { autopilotCruise = null; },
+  update,
+  draw,
+  spriteReady: () => spriteReady,
+  spriteURI: SPRITE_URI,
+  selfTest,
+  lastFit: () => ({ ...(lastFit || {}), error: lastFitError, sc: +sc.toFixed(4), offX: +offX.toFixed(2), offY: +offY.toFixed(2), vw, vh }),
+  lastFit: () => lastFit,
+  telemetry: () => telemetry,
+  flightLog,
+  layout: () => ({ sc, offX, offY, kx: cv.width / VW, ky: cv.height / VH, cw: cv.width, ch: cv.height, ox: offX / sc, oy: offY / sc }),
+  autopilot: on => { autopilot = !!on; },
+  steer: () => autopilotSteer(),          // 供确定性回归测试逐步驱动
+  pause: on => { paused = !!on; },
+  debug: () => ({ score, state, best, vy: bird.vy, rot: bird.rot, y: bird.y, pipes: pipes.length, spriteReady }),
+  gamestate: () => ({ bird, pipes, get score() { return score; } }),
+  toDevice: (vx, vy) => ({ x: (vx * sc + offX) * (cv.width / window.innerWidth), y: (vy * sc + offY) * (cv.height / window.innerHeight) }),
+};
+})();
+</script>
+</body>
+</html>
