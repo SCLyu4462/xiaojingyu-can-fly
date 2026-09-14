@@ -1,6 +1,7 @@
 # 测试产物与本地缓存（截图体积较大，不纳入版本库）
 tests/shots/
 tests/drive-log.txt
+deploy/**/drive-log.txt
 docs/screenshot-*.png
 
 # Python
