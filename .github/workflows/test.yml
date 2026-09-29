@@ -1,0 +1,43 @@
+name: regression-tests
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  cdp-suite:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Start headless Chrome (CDP :8899)
+        run: |
+          google-chrome --headless=new --remote-debugging-port=8899 \
+            --user-data-dir=/tmp/dsh-test --no-sandbox about:blank &
+          for i in $(seq 1 30); do
+            curl -sf http://127.0.0.1:8899/json/version > /dev/null && break
+            sleep 1
+          done
+
+      - name: Desktop 1440x900
+        run: CDP_PORT=8899 node tests/drive.js --w=1440 --h=900 --tag=desktop
+
+      - name: Tablet 820x1180
+        run: CDP_PORT=8899 node tests/drive.js --w=820 --h=1180 --tag=tablet
+
+      - name: Phone 390x844 (mobile)
+        run: CDP_PORT=8899 node tests/drive.js --w=390 --h=844 --mobile --tag=phone
+
+      - name: Upload screenshots and logs on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-shots
+          path: |
+            tests/shots/
+            tests/drive-log.txt
+          retention-days: 7
