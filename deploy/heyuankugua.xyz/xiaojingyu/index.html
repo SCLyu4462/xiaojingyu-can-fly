@@ -28,7 +28,7 @@
   }
   /* 左上角返回博客的入口（不影响游戏本体） */
   #home{
-    position: fixed; left: 12px; top: 12px; z-index: 10;
+    position: fixed; left: max(12px, env(safe-area-inset-left)); top: max(12px, env(safe-area-inset-top)); z-index: 10;
     display: inline-flex; align-items: center; gap: 6px;
     padding: 7px 14px; border-radius: 999px;
     background: rgba(255,255,255,.88);
@@ -64,7 +64,7 @@ const cv = document.getElementById("cv");
 const ctx = cv.getContext("2d");
 
 // 视口：CSS 像素为唯一单位，DPR 只作用于画布后备存储
-let vw = VW, vh = VH, sc = 1, offX = 0, offY = 0, bufW = VW, bufH = VH;
+let vw = VW, vh = VH, viewW = VW, viewH = VH, sc = 1, offX = 0, offY = 0, ox = 0, oy = 0, bufW = VW, bufH = VH;
 let lastFit = null, lastFitError = null;
 
 let refitting = false;
@@ -121,6 +121,11 @@ function refitInner() {
   }
   offX = (vw - VW * sc) / 2;
   offY = (vh - VH * sc) / 2;
+  // 变换后真正可见的逻辑范围（绘制时不能用 CSS 像素的 vw/vh、offX/offY）
+  viewW = vw / sc;
+  viewH = vh / sc;
+  ox = offX / sc;
+  oy = offY / sc;
 }
 let fitTimer = 0;
 function fit() { refit(); clearTimeout(fitTimer); fitTimer = setTimeout(refit, 250); }
@@ -381,11 +386,11 @@ const clouds = Array.from({ length: 6 }, (_, i) => ({
 // 天空（连画布多出来的边距一起画，所以按整块画布铺开）
 let skyGrad = null, skyKey = "";
 function drawSky() {
-  const key = vw + "x" + vh;
+  const key = viewW + "x" + viewH;
   const horizonY = VH - GROUND_H;
   if (key !== skyKey) {
     skyKey = key;
-    const g = ctx.createLinearGradient(0, -offY, 0, vh - offY);
+    const g = ctx.createLinearGradient(0, -oy, 0, viewH - oy);
     g.addColorStop(0.00, "#f7c98d");   // 先飞的清晨
     g.addColorStop(0.34, "#bcdcf3");
     g.addColorStop(0.72, "#e7f4fb");
@@ -393,7 +398,7 @@ function drawSky() {
     skyGrad = g;
   }
   ctx.fillStyle = skyGrad;
-  ctx.fillRect(-offX, -offY, vw, horizonY + offY);
+  ctx.fillRect(-ox, -oy, viewW, horizonY + oy);
 
   // 朝阳
   const sx = VW - 104, sy = 132;
@@ -426,7 +431,7 @@ function drawClouds() {
 
 function drawHills() {
   const baseY = VH - GROUND_H + 4;
-  const leftX = -offX, visW = vw;
+  const leftX = -ox, visW = viewW;
   ctx.save();
   // 远山
   ctx.fillStyle = "#9fc4dd";
@@ -508,7 +513,7 @@ function drawPipe(p) {
 
 function drawGround() {
   const y = VH - GROUND_H;
-  const leftX = -offX, visW = vw, bottomY = vh - offY;
+  const leftX = -ox, visW = viewW, bottomY = viewH - oy;
   const g = ctx.createLinearGradient(0, y, 0, bottomY);
   g.addColorStop(0, "#e4d9a8");
   g.addColorStop(0.22, "#d5c58c");
@@ -663,7 +668,7 @@ function drawReadyPanel(t) {
 function drawOverPanel() {
   ctx.save();
   ctx.fillStyle = "rgba(18,32,48,.42)";
-  ctx.fillRect(-offX, -offY, vw, vh);        // 连同两侧延伸的天空一起压暗
+  ctx.fillRect(-ox, -oy, viewW, viewH);        // 连同两侧延伸的天空一起压暗
 
   const w = 306, h = 246, x = (VW - w) / 2, y = VH * 0.5 - h / 2 + 8;
   ctx.fillStyle = "rgba(255,255,255,.95)";
@@ -710,13 +715,13 @@ function drawSoundButton() {
 
 function drawVignette() {
   // 覆盖整块可见区域（含两侧延伸的天空），避免玩法区两侧出现暗带
-  const cx = vw / 2 - offX, cy = -offY + (vh - offY) / 2;
-  const r0 = Math.min(vw, vh) * 0.35, r1 = Math.max(vw, vh) * 0.85;
+  const cx = viewW / 2 - ox, cy = -oy + (viewH - oy) / 2;
+  const r0 = Math.min(viewW, viewH) * 0.35, r1 = Math.max(viewW, viewH) * 0.85;
   const g = ctx.createRadialGradient(cx, cy, r0, cx, cy, r1);
   g.addColorStop(0, "rgba(0,0,0,0)");
   g.addColorStop(1, "rgba(16,32,48,.20)");
   ctx.fillStyle = g;
-  ctx.fillRect(-offX, -offY, vw, vh);
+  ctx.fillRect(-ox, -oy, viewW, viewH);
 }
 
 function draw(t) {
@@ -747,7 +752,7 @@ function draw(t) {
 
   if (flash > 0) {
     ctx.fillStyle = `rgba(255,255,255,${Math.min(0.5, flash)})`;
-    ctx.fillRect(-offX, -offY, vw, vh);
+    ctx.fillRect(-ox, -oy, viewW, viewH);
   }
   ctx.setTransform(1, 0, 0, 1, 0, 0);   // 收尾复位，标定下一帧的起始状态
   ctx.globalAlpha = 1;
